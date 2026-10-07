@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ПУП.02 Информатика — Подходы к измерению информации</title>
+<style>
+  :root {
+    --bg: #edf3f6;
+    --surface: #ffffff;
+    --surface-2: #f3f8fa;
+    --ink: #1c2a31;
+    --muted: #5b6e78;
+    --teal: #0f766e;
+    --blue: #1d6fd4;
+    --cyan: #0e7490;
+    --line: #dbe6ec;
+    --ok: #1e7a4a;
+    --ok-soft: #e3f5ec;
+    --bad: #b03a3a;
+    --bad-soft: #f9e8e8;
+    --warn: #b45309;
+    --brand: linear-gradient(135deg, #0f766e 0%, #1d6fd4 55%, #2563eb 100%);
+    --mark: #0f766e;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 17px/1.68 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased; }
+
+  .bg-anim { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none;
+    background: radial-gradient(1100px 600px at 10% -8%, #e8f3f4 0%, #edf3f6 55%); }
+  .bg-anim i { position:absolute; border-radius:50%; filter:blur(70px); opacity:.38; display:block; }
+  .bg-anim i.d1 { width:360px; height:360px; background:#bfe3e0; top:-120px; right:-90px; animation:drift 26s infinite ease-in-out; }
+  .bg-anim i.d2 { width:300px; height:300px; background:#c7dcf2; bottom:-120px; left:-70px; animation:drift 28s infinite ease-in-out reverse; }
+  .bg-anim i.d3 { width:230px; height:230px; background:#cdeee9; top:50%; left:70%; animation:drift 30s infinite ease-in-out; }
+  @keyframes drift {
+    0%,100% { transform: translate(0,0) scale(1); }
+    33% { transform: translate(42px,-32px) scale(1.05); }
+    66% { transform: translate(-36px,28px) scale(.96); }
+  }
+
+  main { position: relative; z-index: 1; max-width: 1120px; margin: 0 auto; padding: 0 1.25rem 4rem; }
+
+  header.top { padding: 2.2rem 0 1.3rem; border-bottom: 1px solid var(--line); margin-bottom: .4rem; }
+  header.top .course { display:inline-block; font-weight:600; font-size:.78rem; letter-spacing:.06em;
+    text-transform:uppercase; color:#fff; background:var(--brand); padding:.28rem .7rem; border-radius:999px; margin-bottom:.75rem;}
+  header.top h1 { font-size: clamp(1.55rem, 3.4vw, 2.15rem); line-height:1.15; margin:0 0 .4rem; color:var(--ink); }
+  header.top .meta { color: var(--muted); font-size:.9rem; margin:0; }
+
+  .deck { position: relative; margin-top: 1.1rem; }
+  .slide { position:absolute; top:0; left:0; width:100%;
+    opacity:0; visibility:hidden; transform: translateY(16px);
+    transition: opacity .38s ease, transform .38s ease, visibility 0s linear .38s;
+    background:var(--surface); border:1px solid var(--line); border-radius:18px;
+    padding:2rem 2.2rem; box-shadow:0 10px 30px rgba(30,50,60,.07); }
+  .slide.active { position:relative; opacity:1; visibility:visible; transform:none;
+    transition: opacity .38s ease, transform .38s ease; }
+
+  .slide .kicker { font-size:.74rem; font-weight:600; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--teal); margin:0 0 .35rem; display:block; }
+  .slide, .slide p, .slide li, .modal-body p, .modal-body li { text-align:justify; }
+  h2.st { font-size: clamp(1.3rem, 2.7vw, 1.65rem); line-height:1.25; margin:0 0 .6rem; color:var(--ink); }
+  .slide p.lead { color:var(--muted); margin:.2rem 0 .9rem; }
+
+  .slide.cover { background: var(--brand); border:none; overflow:hidden; }
+  .slide.cover::before, .slide.cover::after { content:""; position:absolute; border-radius:50%; filter:blur(46px); opacity:.4; z-index:0; }
+  .slide.cover::before { width:300px; height:300px; background:#a5e6dd; top:-80px; right:-30px; }
+  .slide.cover::after { width:260px; height:260px; background:#bcd9f5; bottom:-90px; left:-60px; }
+  .slide.cover > * { position:relative; z-index:1; }
+  .slide.cover .kicker { color:#fff; opacity:.92; }
+  .slide.cover h2.st { color:#fff; font-size: clamp(1.7rem, 4.2vw, 2.3rem); }
+  .slide.cover p.lead { color:rgba(255,255,255,.94); }
+  .tagrow { display:flex; flex-wrap:wrap; gap:.5rem; margin-top:1.3rem; }
+  .cover .tagrow span { background:rgba(255,255,255,.2); border:1px solid rgba(255,255,255,.45);
+    padding:.28rem .7rem; border-radius:999px; font-size:.82rem; font-weight:600; }
+
+  .card { border:1px solid var(--line); border-radius:14px; background:var(--surface-2);
+    padding:1.05rem 1.2rem; margin:.6rem 0; }
+  .card .ttl { font-weight:600; color:var(--teal); margin:0 0 .4rem; font-size:1.02rem; }
+  .card .rec { font-weight:600; color:#1d6fd4; margin:0 0 .35rem; font-size:.95rem; }
+  .card p { margin:.32rem 0; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:.9rem; }
+  .grid2 .card { margin:0; }
+
+  ul.clean { margin:.35rem 0; padding:0; list-style:none; }
+  ul.clean li { margin:.38rem 0; padding-left:1.3rem; position:relative; }
+  ul.clean li::before { content:""; position:absolute; left:.15rem; top:.72em; width:9px; height:2px;
+    background:var(--teal); border-radius:2px; }
+  ol.steps { margin:.4rem 0; padding-left:1.3rem; counter-reset:st; list-style:none; }
+  ol.steps li { margin:.42rem 0; padding-left:2.1rem; position:relative; }
+  ol.steps li::before { counter-increment:st; content:counter(st); position:absolute; left:0; top:.05rem;
+    width:1.5rem; height:1.5rem; line-height:1.5rem; text-align:center; border-radius:50%;
+    background:var(--brand); color:#fff; font-weight:600; font-size:.8rem; }
+
+  .pill { display:inline-block; font-family:ui-monospace,monospace; font-weight:600; color:var(--teal);
+    background:#e2f1ef; border:1px solid #c4e6e2; padding:.03rem .45rem; border-radius:6px; }
+  .formula { font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    background:#eef5f7; border:1px solid var(--line); border-radius:10px;
+    padding:.85rem 1.05rem; margin:.55rem 0; font-size:.96rem; color:#233038; white-space:pre; }
+  .formula b { color:#1d6fd4; }
+  .sol { border:1px solid #c4e6e2; border-left:4px solid var(--teal); background:#f0f8f8;
+    border-radius:0 10px 10px 0; padding:.9rem 1.1rem; margin:.6rem 0; }
+  .sol label { font-weight:700; color:var(--teal); display:block; margin-bottom:.35rem; }
+  .sol .ans { display:block; background:#e2f1ef; border-radius:8px; padding:.55rem .75rem; margin-top:.5rem; font-weight:600; }
+  table { border-collapse:collapse; width:100%; font-size:.9rem; margin:.55rem 0; }
+  th, td { padding:.55rem .7rem; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+  th { color:var(--muted); font-weight:600; }
+  td.num { text-align:right; font-variant-numeric:tabular-nums; }
+  table.center th, table.center td { text-align:center; }
+  td.mono, .mono { font-family:ui-monospace,monospace; }
+  .scroll { overflow-x:auto; }
+  .note { font-size:.86rem; color:var(--muted); font-style:italic; margin:.45rem 0; }
+  .callout { border-left:4px solid var(--blue); background:var(--surface-2); border-radius:0 10px 10px 0;
+    padding:.9rem 1.1rem; margin:.7rem 0; }
+  .callout b { color:#1d6fd4; }
+  .example { border:1px dashed #c4d8e6; border-radius:12px; padding:.85rem 1.1rem; margin:.6rem 0; background:#f6fafc; }
+  .example b { color:var(--teal); }
+
+  figure { margin:.6rem 0; border:1px solid var(--line); border-radius:14px; background:var(--surface-2); padding:1rem; }
+  figcaption { color:var(--muted); font-size:.82rem; text-align:center; margin-top:.7rem; }
+  .imgfit { max-width:86%; height:auto; display:block; margin:0 auto; border-radius:10px; }
+
+  .src { border:1px solid var(--line); border-radius:12px; padding:.1rem 1.05rem .5rem; margin:.7rem 0; background:var(--surface-2);}
+  .src h3 { font-size:.86rem; margin:.75rem 0 .3rem; color:var(--teal); text-transform:uppercase; letter-spacing:.05em;}
+  .src-btns { display:flex; flex-wrap:wrap; gap:.55rem; margin-top:.35rem; }
+  .botao { display:inline-flex; align-items:center; gap:.45rem; padding:.5rem .85rem; border-radius:10px;
+    border:1px solid var(--line); background:var(--surface); color:var(--ink); text-decoration:none; font-size:.86rem; font-weight:600;
+    transition: border-color .12s, background .12s, transform .12s; }
+  .botao::before { content:"↗"; color:var(--teal); font-weight:700; }
+  .botao:hover { border-color:var(--teal); background:#e2f1ef; transform:translateY(-1px); }
+  .botao .bname { color:var(--teal); }
+  .botao .bdesc { color:var(--muted); font-weight:500; }
+
+  .pbar { height:6px; background:#dce6ec; border-radius:99px; overflow:hidden; margin:1.1rem 0 .6rem; }
+  #pfill { height:100%; width:0%; background:var(--brand); border-radius:99px; transition:width .35s ease; }
+  .nav { display:flex; align-items:center; gap:.6rem; margin-top:.5rem; }
+  .nav button { cursor:pointer; border-radius:10px; font:inherit; font-weight:600;
+    padding:.6rem 1.1rem; background:var(--surface); border:1px solid var(--line); color:var(--ink);
+    transition: transform .1s, background .12s; }
+  .nav button:hover:not(:disabled) { background:var(--surface-2); }
+  .nav button:disabled { opacity:.45; cursor:not-allowed; }
+  .nav .primary { background:var(--brand); color:#fff; border:none; }
+  .dots { flex:1; display:flex; gap:4px; justify-content:center; min-width:0; overflow:hidden; }
+  .dot { width:5px; height:5px; flex:none; border-radius:50%; background:#c2d3dc; border:none; padding:0;
+    cursor:pointer; transition: transform .12s, background .15s, width .12s; }
+  .dot:hover { background:var(--teal); }
+  .dot.active { background:var(--teal); transform:scale(1.3); width:9px; border-radius:99px; }
+  .counter { font-variant-numeric:tabular-nums; font-size:.85rem; color:var(--muted); font-weight:600; min-width:3.2rem; text-align:center; }
+
+  footer { color:var(--muted); font-size:.84rem; border-top:1px solid var(--line);
+    margin-top:2.4rem; padding-top:.9rem; }
+
+  .modal-overlay { position:fixed; inset:0; z-index:50; background:rgba(25,45,55,.5);
+    display:none; align-items:center; justify-content:center; padding:1.5rem; }
+  .modal-overlay.show { display:flex; }
+  .modal { background:var(--surface); border:1px solid var(--line); border-radius:16px;
+    max-width:860px; width:100%; max-height:88vh; display:flex; flex-direction:column;
+    box-shadow:0 30px 70px rgba(20,40,50,.25); }
+  .modal-head { display:flex; align-items:center; justify-content:space-between; gap:1rem;
+    padding:1.05rem 1.4rem; border-bottom:1px solid var(--line); }
+  .modal-head h2 { margin:0; font-size:1.25rem; color:var(--ink); }
+  .modal-close { cursor:pointer; background:var(--surface-2); border:1px solid var(--line); color:var(--ink);
+    border-radius:8px; width:38px; height:38px; font-size:1.3rem; line-height:1; }
+  .modal-close:hover { background:var(--bad-soft); color:var(--bad); }
+  .modal-body { overflow-y:auto; padding:1.2rem 1.5rem 1.6rem; }
+  .modal-body p { margin:.45rem 0; color:var(--ink); }
+  .modal-body li { margin:.3rem 0; color:var(--ink); }
+  .qz-intro { font-size:.95rem; color:var(--muted); margin:0 0 1rem; }
+
+  .qz { border:1px solid var(--line); border-radius:14px; padding:1.05rem 1.2rem; margin:1rem 0; background:var(--surface-2); }
+  .qz .ztype { display:inline-block; font-size:.74rem; font-weight:600; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--teal); border:1px solid #c4e6e2; background:#e2f1ef; border-radius:999px; padding:.12rem .6rem; margin-bottom:.5rem; }
+  .qz .zq { font-weight:600; margin:.2rem 0 .6rem; color:var(--ink); }
+  .qz .zopt { display:block; width:100%; text-align:left; cursor:pointer; border:1.5px solid var(--line);
+    background:var(--surface); border-radius:9px; padding:.6rem .85rem; margin:.42rem 0; font:inherit; color:var(--ink);
+    transition: border-color .12s, background .12s; }
+  .qz .zopt:hover:not(:disabled) { border-color:var(--teal); }
+  .qz .zopt:disabled { cursor:default; }
+  .qz .zopt .l { font-weight:700; color:var(--muted); margin-right:.5rem; }
+  .qz .zopt.right { border-color:var(--ok); background:var(--ok-soft); }
+  .qz .zopt.wrong { border-color:var(--bad); background:var(--bad-soft); }
+  .qz .zexpl { display:none; margin:.6rem 0 0; padding:.7rem .9rem; border-radius:9px; font-size:.92rem; }
+  .qz .zexpl.show { display:block; }
+  .qz .zexpl.ok { background:var(--ok-soft); border:1px solid #b6e0c4; }
+  .qz .zexpl.bad { background:var(--bad-soft); border:1px solid #f0bfbf; }
+  .qz .zexpl .head { font-weight:800; margin-bottom:.2rem; }
+  .qz .zexpl.ok .head { color:var(--ok); }
+  .qz .zexpl.bad .head { color:var(--bad); }
+  .qz .znum { display:flex; gap:.55rem; align-items:center; flex-wrap:wrap; }
+  .qz .znum input { font:inherit; padding:.55rem .8rem; border:1.5px solid var(--line); border-radius:9px; background:var(--surface); color:var(--ink); width:190px; }
+  .qz .znum input:focus { outline:none; border-color:var(--teal); }
+  .qz .zbtn { cursor:pointer; background:var(--brand); color:#fff; border:none; font:inherit; font-weight:600;
+    padding:.55rem 1.1rem; border-radius:9px; }
+  .qz .zbtn:hover { filter:brightness(1.07); }
+  .qz .zscore { font-weight:700; color:var(--teal); margin-top:.1rem; }
+
+  .btn-open { cursor:pointer; background:var(--brand); color:#fff; border:none; font:inherit; font-weight:600;
+    padding:.8rem 1.7rem; font-size:1.02rem; border-radius:11px; box-shadow:0 6px 18px rgba(13,100,120,.30);
+    transition: transform .12s, box-shadow .12s, filter .12s; }
+  .btn-open:hover { transform:translateY(-2px); filter:brightness(1.07); box-shadow:0 10px 24px rgba(13,100,120,.4); }
+
+  @media (max-width: 640px){
+    .grid2 { grid-template-columns:1fr; }
+    .slide { padding:1.3rem 1.1rem; }
+    .dots { display:none; }
+  }
+  @media print {
+    body { background:#fff; }
+    .bg-anim, .nav, .pbar { display:none; }
+    .slide { position:static !important; opacity:1 !important; visibility:visible !important;
+      transform:none !important; break-inside:avoid; background:#fff; color:#111; border:1px solid #ccc; margin:0 0 1rem; }
+  }
+</style>
+</head>
+<body>
+<div class="bg-anim"><i class="d1"></i><i class="d2"></i><i class="d3"></i></div>
+<main>
+  <header class="top">
+    <span class="course">ПУП.02 · Информатика</span>
+    <h1>Подходы к измерению информации</h1>
+    <p class="meta">Тема 1.2 · 4 академических часа · практические занятия · очная форма. Тема изучается одной из первых в курсе информатики. Рассматриваются содержательный, алфавитный и вероятностный подходы, единицы измерения, информационные объекты, хранение, передача и архивация; приводится подробный разбор задач в формате ОГЭ и ЕГЭ.</p>
+  </header>
+
+  <div class="deck" id="deck">
+
+    <article class="slide cover active">
+      <p class="kicker">Раздел 1 · Информация и информационные процессы</p>
+      <h2 class="st">Что такое информация и как её измерить</h2>
+      <p class="lead">Информация окружает человека повсюду: текст книги, фотография, звук музыки, сообщение в мессенджере. Но как оценить, сколько именно информации содержится в том или ином сообщении и сколько места оно займёт в памяти компьютера? Именно этим вопросам посвящена настоящая тема.</p>
+      <div class="tagrow">
+        <span>Понятие информации</span><span>Содержательный подход</span><span>Алфавитный подход</span><span>Вероятностный подход</span><span>Единицы измерения</span><span>Архивация</span>
+      </div>
+    </article>
+
+    <article class="slide">
+      <p class="kicker">Основные понятия</p>
+      <h2 class="st">Понятие информации</h2>
+      <p class="lead">Информация — одно из фундаментальных понятий современной науки, и его изучение с этого курса начинается именно здесь.</p>
+      <div class="card"><p class="ttl">Определение</p>
+        <p>В широком смысле <b>информацией</b> называют сведения об окружающем мире и протекающих в нём процессах, воспринимаемые человеком или техническими устройствами. Информация уменьшает неопределённость наших знаний: получив сообщение, человек узнаёт то, чего не знал ранее, или уточняет свои представления.</p>
+      </div>
+      <div class="card"><p class="ttl">Свойства информации</p>
+        <ul class="clean">
+          <li><b>Достоверность</b> — информация должна соответствовать реальному положению дел.</li>
+          <li><b>Полнота</b> — информации достаточно для принятия решения.</li>
+          <li><b>Актуальность</b> — информация важна в данный момент времени.</li>
+          <li><b>Объективность</b> — информация не зависит от чьего-либо мнения.</li>
+          <li><b>Доступность и понятность</b> — информация представлена в форме, удобной для восприятия.</li>
+        </ul>
+      </div>
+      <div class="example"><b>Пример из жизни.</b> Прогноз погоды («завтра будет +5°C и дождь») является достоверной, актуальной и необходимой для планирования информацией. Устаревший прогноз за прошлую неделю был бы актуален тогда, но бесполезен сегодня.</div>
+    </article>
+
+    <article class="slide">
+      <p class="kicker">Информационные процессы</p>
+      <h2 class="st">Информационные процессы</h2>
+      <p class="lead">С информацией всегда происходит определённая деятельность — информационные процессы.</p>
+      <div class="scroll"><table>
+        <thead><tr><th>Процесс</th><th>Сущность</th><th>Пример</th></tr></thead>
+        <tbody>
+          <tr><td><b>Сбор</b></td><td>Получение сведений из внешнего мира</td><td>Чтение показаний датчика, фотосъёмка</td></tr>
+          <tr><td><b>Хранение</b></td><td>Сохранение сведений на носителе</td><td>Запись документа на диск</td></tr>
+          <tr><td><b>Передача</b></td><td>Перемещение сведений между объектами</td><td>Отправка письма по электронной почте</td></tr>
+          <tr><td><b>Обработка</b></td><td>Преобразование сведений по правилам</td><td>Редактирование текста, вычисления</td></tr>
+        </tbody>
+      </table></div>
+      <p class="note">Для выполнения всех перечисленных процессов компьютер оперирует данными — информацией, представленной в формализованном виде. Измерения фактически производятся именно над данными, хранимыми и обрабатываемыми машиной.</p>
+    </article>
+
+    <article class="slide">
+      <p class="kicker">Базовое понятие</p>
+      <h2 class="st">Что такое бит</h2>
+      <p class="lead">Вся информация в компьютере хранится в виде последовательностей нулей и единиц. Минимальная порция такой информации называется битом.</p>
+      <div class="card"><p class="ttl">Определение бита</p>
+        <p><b>Бит</b> (от англ. binary digit — двоичная цифра) — это минимальное количество информации, которое можно передать или сохранить. Один бит может принимать одно из двух значений: 0 или 1. По сути, один бит — это ответ на простой вопрос «да/нет», результат выбора между двумя равновероятными вариантами.</p>
+      </div>
+      <div class="example"><b>Наглядный пример.</b> Подбрасывая монету, мы получаем один из двух равновероятных исходов — орёл или решку. Сообщение о том, какая сторона выпала, содержит информацию в размере ровно одного бита: происходит выбор из двух вариантов.</div>
+      <div class="callout"><b>Ключевая идея:</b> если имеется N равновозможных вариантов, то чтобы различить их, требуется количество информации, соответствующее числу N. Это соотношение лежит в основе всех расчётов данной темы.</div>
+    </article>
+
+    <article class="slide">
+      <p class="kicker">Связь вариантов и битов</p>
+      <h2 class="st">Соотношение числа вариантов и количества информации</h2>
+      <p class="lead">Фундаментальное правило связывает число равновозможных вариантов N и количество информации i в битах.</p>
+      <div class="callout"><b>Основное соотношение:</b> N = 2<sup>i</sup>, где N — число равновозможных вариантов, i — количество информации в битах.</div>
+      <div class="scroll"><table class="center">
+        <thead><tr><th>Число вариантов N</th><th>Степень двойки</th><th>Информация i (бит)</th></tr></thead>
+        <tbody>
+          <tr><td>2</td><td>2<sup>1</sup></td><td>1</td></tr>
+          <tr><td>4</td><td>2<sup>2</sup></td><td>2</td></tr>
+          <tr><td>8</td><td>2<sup>3</sup></td><td>3</td></tr>
+          <tr><td>16</td><td>2<sup>4</sup></td><td>4</td></tr>
+          <tr><td>32</td><td>2<sup>5</sup></td><td>5</td></tr>
+          <tr><td>64</td><td>2<sup>6</sup></td><td>6</td></tr>
+        </tbody>
+      </table></div>
+      <p class="note">Для нахождения неизвестной величины достаточно знать степени числа два. Если число вариантов дано, ищем ближайшую степень двойки; если дано количество бит, возводим двойку в эту степень.</p>
+      <div class="example"><b>Пример.</b> Вопрос про день недели: существует 7 дней, ближайшая степень двойки, покрывающая 7, — это 8 = 2<sup>3</sup>. Поэтому сообщение о конкретном дне недели несёт 3 бита информации.</div>
+    </article>
+
+    <article class="slide">
+      <p class="kicker">Подход 1</p>
+      <h2 class="st">Содержательный подход к измерению информации</h2>
+      <p class="lead">Содержательный подход оценивает информацию по её смыслу и по тому, насколько она снимает неопределённость знаний.</p>
+      <div class="card"><p class="ttl">Сущность подхода</p>
+        <p>Количество информации связывается со степенью неопределённости, которую снимает полученное сообщение. Если до получения сообщения существовало N равновозможных вариантов, то сообщение о конкретном исходе несёт i бит информации, где N = 2<sup>i</sup>.</p>
+        <p>Чем неожиданнее сообщение (чем больше было возможных вариантов), тем больше информации оно несёт. Сообщение о том, что произошло нечто заведомо единственно возможное, информации не несёт вовсе.</p>
+      </div>
+      <div class="example"><b>Пример из жизни.</b> Сообщение «наступила ночь» предсказуемо и почти не несёт новой информации для тех, кто знает о времени суток. Сообщение «сегодня на Землю упал метеорит» крайне маловероятно, поэтому в нём много информации — оно резко уменьшает неопределённость.</div>
+      <div class="callout"><b>Итог:</b> содержательный подход отвечает на вопрос, насколько полезным и неожиданным является сообщение для получателя.</div>
+    </article>
+
+    <article class="slide">
+      <p class="kicker">Подход 2</p>
+      <h2 class="st">Алфавитный подход к измерению информации</h2>
+      <p class="lead">Алфавитный подход измеряет объём данных независимо от их смысла — только по числу символов и размеру алфавита.</p>
+      <div class="card"><p class="ttl">Основные понятия</p>
+        <p><b>Алфавит</b> — это полный набор символов, используемых для записи текста. <b>Мощность алфавита</b> N — количество символов в нём (например, русский алфавит со знаками препинания, 32 символа, 256 символов компьютерной кодировки).</p>
+        <p>Каждый символ несёт определённое количество информации, которое называют <b>информационным весом символа</b> i. Если символ выбирается из алфавита мощности N, то справедливо соотношение N = 2<sup>i</sup>, а информационный вес символа равен i бит.</p>
+      </div>
+      <table>
+        <thead><tr><th>Мощность алфавита N</th><th>Вес одного символа</th></tr></thead>
+        <tbody>
+          <tr><td>2</td><td>1 бит</td></tr>
+          <tr><td>32</td><td>5 бит</td></tr>
+          <tr><td>64</td><td>6 бит</td></tr>
+          <tr><td>256</td><td>8 бит = 1 байт</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>Важно:</b> в компьютерной кодировке, где алфавит состоит из 256 символов, один символ занимает ровно 1 байт. Это базовый случай, с которым мы будем встречаться в большинстве задач.</div>
+    </article>
+
+    <article class="slide">
+      <p class="kicker">Алфавитный подход</p>
+      <h2 class="st">Объём сообщения при алфавитном подходе</h2>
+      <p class="lead">Когда известен информационный вес одного символа, легко вычислить объём всего сообщения.</p>
+      <div class="callout"><b>Формула объёма сообщения:</b> V = K · i, где V — информационный объём сообщения, K — количество символов, i — информационный вес одного символа.</div>
+      <div class="card"><p class="ttl">Алгоритм решения</p>
+        <ol class="steps">
+          <li>Определить мощность алфавита N (число используемых символов).</li>
+          <li>Найти информационный вес одного символа i (бит), используя N = 2<sup>i</sup>.</li>
+          <li>Посчитать количество символов K в сообщении.</li>
+          <li>Вычислить объём V = K · i и при необходимости перевести в байты (разделить на 8).</li>
+        </ol>
+      </div>
+      <div class="example"><b>Пример.</b> Сообщение «ПРИВЕТ» состоит из 6 символов. Если используется алфавит в 32 символа (русская клавиатура без заглавных), то вес одного символа — 5 бит. Объём сообщения: 6 · 5 = 30 бит.</div>
+      <p class="note">В практических работах текстовые файлы обычно кодируются алфавитом из 256 символов, поэтому каждый символ занимает 1 байт.</p>
+    </article>
+
+    <article class="slide">
+      <p class="kicker">Подход 3</p>
+      <h2 class="st">Вероятностный подход к измерению информации</h2>
+      <p class="lead">Вероятностный подход связывает количество информации с вероятностью наступления события.</p>
+      <div class="card"><p class="ttl">Сущность подхода</p>
+        <p>Вероятностный подход является обобщением содержательного на случай событий с разными вероятностями. Для равновероятных событий он сводится к уже знакомому соотношению N = 2<sup>i</sup>.</p>
+        <p>Если вероятность события равна p = 1/N, то количество информации о его наступлении равно i бит, где N = 2<sup>i</sup>. Чем меньше вероятность события, тем больше информации оно несёт.</p>
+      </div>
+      <div class="example"><b>Сравнение.</b> Сообщение «урок информатики сегодня есть» для школьника, у которого информатика дважды в неделю по расписанию, почти предсказуемо и несёт мало информации. Сообщение «урок информатики будет дополнительно в субботу» маловероятно — информации в нём больше, так как оно снижает большую неопределённость.</div>
+      <div class="callout"><b>Вывод:</b> для стандартных задач, где события равновероятны, достаточно владеть соотношением N = 2<sup>i</sup> и уметь подбирать степени двойки.</div>
+    </article>
+
+    <article class="slide">
+      <p class="kicker">Единицы измерения</p>
+      <h2 class="st">Единицы измерения информации</h2>
+      <p class="lead">Один бит — слишком малая величина, поэтому на практике используют более крупные единицы.</p>
+      <div class="scroll"><table>
+        <thead><tr><th>Единица</th><th>Обозначение</th><th>Соотношение</th></tr></thead>
+        <tbody>
+          <tr><td>Бит</td><td>бит</td><td>наименьшая единица</td></tr>
+          <tr><td>Байт</td><td>байт</td><td>1 байт = 8 бит</td></tr>
+          <tr><td>Килобайт</td><td>Кбайт</td><td>1 Кбайт = 1024 байт = 2<sup>10</sup> байт</td></tr>
+          <tr><td>Мегабайт</td><td>Мбайт</td><td>1 Мбайт = 1024 Кбайт = 2<sup>20</sup> байт</td></tr>
+          <tr><td>Гигабайт</td><td>Гбайт</td><td>1 Гбайт = 1024 Мбайт = 2<sup>30</sup> байт</td></tr>
+          <tr><td>Терабайт</td><td>Тбайт</td><td>1 Тбайт = 1024 Гбайт = 2<sup>40</sup> байт</td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout"><b>Почему 1024?</b> Из-за двоичной природы компьютера единицы кратны 2<sup>10</sup> = 1024, а не 1000. Это отличает компьютерные единицы от обычных десятичных (например, в сетях чаще используют десятичные мегабиты 1 000 000 бит).</div>
+      <p class="note">Правила перевода: при переходе к младшей единице умножаем на 8 (биты из байтов) или на 1024 (байты и более крупные); при переходе к старшей единице делим на соответствующее число.</p>
+    </article>
+
+    <article class="slide">
+      <p class="kicker">Перевод единиц</p>
+      <h2 class="st">Практика перевода между единицами</h2>
+      <p class="lead">Умение переводить значения между битами, байтами, килобайтами и мегабайтами необходимо для всех задач данной темы.</p>
+      <div class="grid2">
+        <div class="card"><p class="ttl">Из бит в байты</p>
+          <p>Делим количество бит на 8. Пример: <b>16 бит = 16 ÷ 8 = 2 байта</b>.</p>
+          <p class="note">Это ключевое действие, используемое в задачах о переводе сообщений между кодировками.</p>
+        </div>
+        <div class="card"><p class="ttl">Из Кбайт в байты</p>
+          <p>Умножаем на 1024. Пример: <b>2 Кбайт = 2 · 1024 = 2048 байт</b>.</p>
+          <p class="note">При переходе на две ступени (например, Мбайт в байты) умножаем или делим несколько раз.</p>
+        </div>
+      </div>
+      <div class="example"><b>Пример перевода.</b> Выразим 3 Мбайта в байтах: 3 Мбайт = 3 · 1024 Кбайт = 3072 Кбайт = 3072 · 1024 байт = 3 145 728 байт.</div>
+      <p class="note">На экзаменах часто просят ответ в удобной единице; при переводе следует внимательно следить за тем, чтобы не перепутать кратность 1024 и 8.</p>
+    </article>
+
+    <article class="slide">
+      <p class="kicker">Информационные объекты</p>
+      <h2 class="st">Информационные объекты различных видов</h2>
+      <p class="lead">Число типов данных, с которыми работает компьютер, велико, и у каждого — своя формула расчёта объёма.</p>
+      <div class="scroll"><table>
+        <thead><tr><th>Вид объекта</th><th>Параметры</th><th>Расчёт объёма</th></tr></thead>
+        <tbody>
+          <tr><td><b>Текст</b></td><td>число символов K, вес символа i</td><td>V = K · i</td></tr>
+          <tr><td><b>Растровая графика</b></td><td>число пикселей, глубина цвета (бит на пиксель)</td><td>V = пиксели · глубина цвета</td></tr>
+          <tr><td><b>Звук</b></td><td>частота дискретизации, разрядность, длительность</td><td>V = частота · разрядность · время</td></tr>
+          <tr><td><b>Видео</b></td><td>число кадров, размер кадра, глубина</td><td>сумма объёмов всех кадров</td></tr>
+        </tbody>
+      </table></div>
+      <div class="card"><p class="ttl">Дискретное представление</p>
+        <p>Любая информация в компьютере представлена в дискретном (цифровом) виде — как последовательность нулей и единиц. Непрерывные объекты (звук, изображение) перед сохранением оцифровываются: разбиваются на мелкие элементы — пиксели, отсчёты времени, каждому из которых ставится в соответствие число. Именно поэтому все вычисления объёма сводятся к перемножению чисел.</p>
+      </div>
+      <div class="example"><b>Пример.</b> Фотография состоит из пикселей; чем больше пикселей и чем больше бит на каждый пиксель (глубина цвета), тем больше «весит» файл. Графический файл в 24-битной палитре на каждый пиксель хранит 24 бита информации.</div>
+    </article>
+
+    <article class="slide">
+      <p class="kicker">Измерение текста</p>
+      <h2 class="st">Определение объёма текстового файла</h2>
+      <p class="lead">Расчёт объёма текста — самая распространённая задача этой темы в формате ОГЭ.</p>
+      <div class="card"><p class="ttl">Порядок действий</p>
+        <ol class="steps">
+          <li>Посчитать общее число символов в сообщении: перемножить число страниц, строк и символов в строке.</li>
+          <li>Определить информационный вес символа по мощности алфавита (обычно 1 байт при алфавите в 256 символов).</li>
+          <li>Умножить число символов на вес символа, получив объём в битах или байтах.</li>
+          <li>При необходимости перевести результат в более крупные единицы.</li>
+        </ol>
+      </div>
+      <div class="callout"><b>Примечание:</b> объём текстового файла на компьютере часто совпадает с оценкой по алфавитному подходу, поскольку каждый символ кодируется фиксированным числом бит (например, 1 или 2 байта в разных кодировках Unicode).</div>
+    </article>
+
+    <article class="slide">
+      <p class="kicker">Измерение графики</p>
+      <h2 class="st">Определение объёма графического файла</h2>
+      <p class="lead">Для растровой графики объём зависит от размеров изображения и глубины цвета.</p>
+      <div class="card"><p class="ttl">Основные понятия</p>
+        <p><b>Разрешение</b> — число пикселей по ширине и высоте (например, 800×600). <b>Глубина цвета</b> — число бит, отводимых на один пиксель, которое определяется количеством возможных цветов: если доступно N цветов, то глубина цвета равна i бит, где N = 2<sup>i</sup>.</p>
+      </div>
+      <table>
+        <thead><tr><th>Число цветов</th><th>Глубина цвета (бит на пиксель)</th></tr></thead>
+        <tbody>
+          <tr><td>2</td><td>1</td></tr>
+          <tr><td>16</td><td>4</td></tr>
+          <tr><td>256</td><td>8</td></tr>
+          <tr><td>65 536</td><td>16</td></tr>
+          <tr><td>16 777 216</td><td>24</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>Формула объёма графики:</b> V = (ширина × высота) × глубина цвета. Результат получается в битах;</div>
+      <p class="note">для перевода в байты результат делят на 8, в килобайты — ещё и на 1024.</p>
+    </article>
+
+    <article class="slide">
+      <p class="kicker">Носители</p>
+      <h2 class="st">Определение объёмов носителей информации</h2>
+      <p class="lead">Носителями называют устройства долговременного хранения данных: жёсткие диски, флеш-накопители, диски.</p>
+      <div class="card"><p class="ttl">Сущность</p>
+        <p>Ёмкость носителя показывает, какой объём информации он способен хранить. Она измеряется в мегабайтах, гигабайтах или терабайтах. Задача часто сводится к тому, чтобы определить, сколько объектов заданного объёма поместится на носителе или каким объёмом данных он заполнен.</p>
+      </div>
+      <div class="example"><b>Пример.</b> Пользователь хочет захватить на флешку фильмы. Если ёмкость флешки 8 Гбайт, а каждый фильм занимает 700 Мбайт, то число фильмов равно числу, полученному делением ёмкости на объём одного фильма после приведения к одним единицам (8 Гбайт = 8192 Мбайта).</div>
+      <div class="callout"><b>Алгоритм:</b> привести ёмкость носителя и объём объекта к одним единицам измерения, затем разделить ёмкость на объём объекта.</div>
+    </article>
+
+    <article class="slide">
+      <p class="kicker">Передача данных</p>
+      <h2 class="st">Хранение и передача информации</h2>
+      <p class="lead">Кроме объёма, в задачах часто требуется время передачи данных по каналу связи.</p>
+      <div class="card"><p class="ttl">Параметры передачи</p>
+        <p><b>Скорость передачи</b> измеряется в битах в секунду (бит/с) или кратных единицах (Кбит/с, Мбит/с). <b>Время передачи</b> вычисляется делением объёма данных (в битах) на скорость.</p>
+      </div>
+      <div class="callout"><b>Формула:</b> T = V / v, где T — время (с), V — объём (бит), v — скорость (бит/с).</div>
+      <p class="note">Частая ошибка — забыть перевести объём из байтов в биты. Если объём в байтах, а скорость в битах в секунду, обязателен перевод: умножить объём на 8.</p>
+      <div class="example"><b>Пример.</b> При передаче файла объёмом 4 Мбайта по каналу со скоростью 2 Мбита/с объём переводят в биты: 4 Мбайт = 4 · 8 = 32 Мбита. Тогда время передачи: 32 ÷ 2 = 16 секунд.</div>
+    </article>
+
+    <article class="slide">
+      <p class="kicker">Архивация</p>
+      <h2 class="st">Архив информации и сжатие данных</h2>
+      <p class="lead">Архивация уменьшает объём файла, устраняя избыточность данных.</p>
+      <div class="card"><p class="ttl">Что такое архивация</p>
+        <p>Программа-архиватор (ZIP, RAR, 7-Zip) находит в файле повторяющиеся фрагменты и записывает их компактнее, например, один раз со ссылками на повторы либо используя более короткие коды для часто встречающихся символов. В результате объём файла уменьшается, что экономит место на носителе и ускоряет передачу по сети.</p>
+      </div>
+      <div class="callout"><b>Формула:</b> объём архива = исходный объём × доля, оставшаяся после сжатия.</div>
+      <div class="example"><b>Пример.</b> Если файл объёмом 10 Мбайт сжали на 60%, то осталось 40% исходного объёма: 10 × 0,4 = 4 Мбайта. Если сказано «сжали в 5 раз», объём делят на 5.</div>
+      <p class="note">Эффективность сжатия зависит от типа данных: тексты и офисные документы сжимаются хорошо, а уже сжатые форматы (JPEG, MP3) почти не уменьшаются.</p>
+    </article>
+
+    <article class="slide">
+      <p class="kicker">Пример использования</p>
+      <h2 class="st">Пример 1 · Объём текстового сообщения (ОГЭ)</h2>
+      <p class="lead">Разберём типовую задачу из открытого банка заданий ОГЭ по информатике.</p>
+      <div class="card"><p class="ttl">Условие (ОГЭ)</p>
+        <p>В одной из кодировок Unicode каждый символ кодируется 16 битами. Сообщение состоит из 20 символов. Определите информационный объём этого сообщения в байтах.</p>
+      </div>
+      <div class="sol"><label>Решение</label>
+        <p><b>Шаг 1.</b> Вес одного символа взят из условия и равен <b>i = 16</b> бит.</p>
+        <p><b>Шаг 2.</b> Объём найдём по формуле сообщения <b>V = K · i</b>, где K — число символов (20), i — вес символа (16 бит). Подставляем значения:</p>
+        <div class="formula">V = K · i = 20 · 16 = 320 бит</div>
+        <p><b>Шаг 3.</b> Переводим биты в байты по формуле <b>V (байт) = V (бит) ÷ 8</b>:</p>
+        <div class="formula">320 ÷ 8 = 40 байт</div>
+        <span class="ans">Ответ: 40 байт.</span>
+      </div>
+      <div class="example"><b>Где применяется в жизни и проектах.</b> Этот расчёт выполняет любая программа при определении «веса» текстового файла и оценке лимита символов в сообщении. Электронная почта, мессенджеры и текстовые редакторы используют подобные оценки, чтобы сообщать пользователю размер текста; веб-страницы и документы кодируются в Unicode (16 или 32 бита на символ), поэтому знание этой формулы помогает спрогнозировать, сколько памяти займёт база данных с текстовыми полями, и рассчитать лимиты в социальных сетях и SMS-сервисах.</div>
+      <p class="note">Задачи ОГЭ часто дают вес символа явно (в условии), поэтому главное действие — умножить число символов на вес и корректно перевести единицы.</p>
+    </article>
+
+    <article class="slide">
+      <p class="kicker">Пример использования</p>
+      <h2 class="st">Пример 2 · Перекодировка сообщения (ЕГЭ)</h2>
+      <p class="lead">Задача на изменение объёма при смене кодировки — классика ЕГЭ.</p>
+      <div class="card"><p class="ttl">Условие (ЕГЭ)</p>
+        <p>Автоматическое устройство перекодировало сообщение на русском языке, первоначально записанное в 16-битном коде Unicode, в 8-битную кодировку. При этом информационное сообщение уменьшилось на 640 бит. Чему равна длина сообщения в символах?</p>
+      </div>
+      <div class="sol"><label>Решение</label>
+        <p><b>Шаг 1.</b> Найдём, на сколько бит уменьшился вес одного символа при перекодировке из 16 бит в 8 бит:</p>
+        <div class="formula">Δi = i_1 − i_2 = 16 − 8 = 8 бит</div>
+        <p><b>Шаг 2.</b> Применим формулу изменения объёма <b>ΔV = K · Δi</b>, откуда число символов <b>K = ΔV ÷ Δi</b>. Подставляем ΔV = 640 бит и Δi = 8 бит:</p>
+        <div class="formula">K = 640 ÷ 8 = 80 символов</div>
+        <span class="ans">Ответ: 80 символов.</span>
+      </div>
+      <div class="example"><b>Где применяется в жизни и проектах.</b> Перекодировка текста между Unicode и более компактными кодировками используется при переносе документов в системы с ограничением на размер, в протоколах обмена данными, встроенных устройствах и микроконтроллерах, в SMS-шлюзах и международных телекоммуникациях. Инженеры рассчитывают подобные изменения объёма, когда оптимизируют хранение текста в базах данных или разрабатывают конвертеры кодировок.</div>
+      <p class="note">Ключевой приём: разница в весе одного символа в разных кодировках, умноженная на число символов, даёт изменение общего объёма.</p>
+    </article>
+
+    <article class="slide">
+      <p class="kicker">Пример использования</p>
+      <h2 class="st">Пример 3 · Графический файл (ОГЭ)</h2>
+      <p class="lead">Типовое задание ОГЭ на информационный объём изображения.</p>
+      <div class="card"><p class="ttl">Условие (ОГЭ)</p>
+        <p>Растровое изображение размером 1024×768 пикселей сохранили в режиме 256 цветов. Определите информационный объём файла в Кбайтах.</p>
+      </div>
+      <div class="sol"><label>Решение</label>
+        <p><b>Шаг 1.</b> Найдём глубину цвета по соотношению <b>N = 2<sup>i</sup></b>, где N — число цветов (256):</p>
+        <div class="formula">256 = 2^8  →  i = 8 бит на пиксель</div>
+        <p><b>Шаг 2.</b> Найдём число пикселей умножением ширины на высоту:</p>
+        <div class="formula">1024 × 768 = 786 432 пикселей</div>
+        <p><b>Шаг 3.</b> Объём рассчитаем по формуле <b>V = пиксели · глубина цвета</b>:</p>
+        <div class="formula">V = 786 432 · 8 = 6 291 456 бит</div>
+        <p><b>Шаг 4.</b> Переводим биты в байты (делим на 8):</p>
+        <div class="formula">6 291 456 ÷ 8 = 786 432 байта</div>
+        <p><b>Шаг 5.</b> Переводим байты в Кбайты (делим на 1024):</p>
+        <div class="formula">786 432 ÷ 1024 = 768 Кбайт</div>
+        <span class="ans">Ответ: 768 Кбайт.</span>
+      </div>
+      <div class="example"><b>Где применяется в жизни и проектах.</b> Такой расчёт выполняет графический редактор и операционная система при открытии изображений, а также фотохостинги и мессенджеры при оценке «веса» картинки. Знание формулы помогает веб-разработчикам и дизайнерам оценить, сколько места займёт загружаемая фотография, выбрать формат и уменьшить время загрузки сайта или приложения — это напрямую влияет на скорость работы интерфейса и расход интернет-трафика.</div>
+      <p class="note">Обратите внимание на удобство чисел: 1024 пикселей и 8 бит на пиксель дают в итоге «круглый» результат — признак правильно подобранного задания.</p>
+    </article>
+
+    <article class="slide">
+      <p class="kicker">Пример использования</p>
+      <h2 class="st">Пример 4 · Поиск числа событий (ОГЭ)</h2>
+      <p class="lead">Задача на обратное применение соотношения N = 2<sup>i</sup>.</p>
+      <div class="card"><p class="ttl">Условие (ОГЭ)</p>
+        <p>Количество информации, полученное при выборе одного из равновероятных событий, равно 3 битам. Сколько событий было возможно?</p>
+      </div>
+      <div class="sol"><label>Решение</label>
+        <p><b>Шаг 1.</b> Применяем основное соотношение <b>N = 2<sup>i</sup></b>, подставляя i = 3 бита:</p>
+        <div class="formula">N = 2^3 = 2 · 2 · 2 = 8</div>
+        <span class="ans">Ответ: 8 событий.</span>
+      </div>
+      <div class="example"><b>Где применяется в жизни и проектах.</b> Эта закономерность лежит в основе систем адресации и кодирования: количество уникальных адресов, кодов или идентификаторов, которые можно выдать, всегда равно степени двойки. Так рассчитываются ёмкость ячеек памяти, число возможных IP-адресов в подсети, количество различных ID в базе данных, число каналов в беспроводной сети. Программисты используют это правило, чтобы понять, сколько свободных значений даёт регистр или поле фиксированной длины.</div>
+      <p class="note">Это прямая задача на «сколько вариантов можно закодировать i битами»: 3 бита дают 2·2·2 = 8 различимых вариантов.</p>
+    </article>
+
+    <article class="slide">
+      <p class="kicker">Пример использования</p>
+      <h2 class="st">Пример 5 · Время передачи (ЕГЭ)</h2>
+      <p class="lead">Задача на расчёт времени передачи данных по каналу связи.</p>
+      <div class="card"><p class="ttl">Условие (ЕГЭ)</p>
+        <p>Файл объёмом 8 Мбайт передаётся по каналу связи со скоростью 4 Мбит/с. Сколько секунд будет передаваться файл?</p>
+      </div>
+      <div class="sol"><label>Решение</label>
+        <p><b>Шаг 1.</b> Переведём объём файла в биты, используя соотношение <b>1 Мбайт = 8 Мбит</b>:</p>
+        <div class="formula">V = 8 Мбайт · 8 = 64 Мбита</div>
+        <p><b>Шаг 2.</b> Применим формулу времени передачи <b>T = V ÷ v</b>, где V — объём (64 Мбита), v — скорость (4 Мбит/с):</p>
+        <div class="formula">T = 64 ÷ 4 = 16 секунд</div>
+        <span class="ans">Ответ: 16 секунд.</span>
+      </div>
+      <div class="example"><b>Где применяется в жизни и проектах.</b> Эта формула используется везде, где вычисляют время скачивания или загрузки файла: браузеры показывают «осталось N секунд», видеоплееры оценивают буферизацию, провайдеры проверяют скорость соединения. Системные администраторы и разработчики рассчитывают время передачи по этой формуле при синхронизации баз данных, резервном копировании в облако и передаче больших объёмов данных между серверами.</div>
+      <p class="note">Здесь мегабайт условно переведён в мегабиты умножением на 8; в учебных данных ЕГЭ соотношение подобрано так, чтобы деление было целочисленным.</p>
+    </article>
+
+    <article class="slide">
+      <p class="kicker">Пример использования</p>
+      <h2 class="st">Пример 6 · Масса и число объектов на флешке (ОГЭ)</h2>
+      <p class="lead">Практическая задача на определение числа объектов на носителе.</p>
+      <div class="card"><p class="ttl">Условие (ОГЭ)</p>
+        <p>На флешку объёмом 2 Гбайта копируют фотографии по 4 Мбайта каждая. Сколько таких фотографий поместится на флешку?</p>
+      </div>
+      <div class="sol"><label>Решение</label>
+        <p><b>Шаг 1.</b> Переведём ёмкость флешки в те же единицы, что и объём фото, используя соотношение <b>1 Гбайт = 1024 Мбайта</b>:</p>
+        <div class="formula">2 Гбайта · 1024 = 2048 Мбайт</div>
+        <p><b>Шаг 2.</b> Применим формулу числа объектов <b>K = ёмкость ÷ объём одного объекта</b>, где ёмкость — 2048 Мбайт, объём фото — 4 Мбайта:</p>
+        <div class="formula">K = 2048 ÷ 4 = 512 фотографий</div>
+        <span class="ans">Ответ: 512 фотографий.</span>
+      </div>
+      <div class="example"><b>Где применяется в жизни и проектах.</b> Такой расчёт постоянно выполняют при планировании записи файлов на флешку, диск или в облако: сколько фильмов поместится, хватит ли места для резервной копии, какой объём хранилища выбрать пользователю. Сервисы видеонаблюдения оценивают, сколько дней записей вместит диск; разработчики рассчитывают требуемый размер хранилища для больших коллекций файлов.</div>
+      <p class="note">Обязательное условие — привести ёмкость и объём объекта к одной единице (здесь — к мегабайтам).</p>
+    </article>
+
+    <article class="slide">
+      <p class="kicker">Пример использования</p>
+      <h2 class="st">Пример 7 · Архивация (ОГЭ)</h2>
+      <p class="lead">Задача, сочетающая архивацию и определение объёма.</p>
+      <div class="card"><p class="ttl">Условие (ОГЭ)</p>
+        <p>Текстовый файл объёмом 300 Кбайт заархивировали. После архивации файл уменьшился на 80%. Каков объём архива в Кбайтах?</p>
+      </div>
+      <div class="sol"><label>Решение</label>
+        <p><b>Шаг 1.</b> Найдём долю объёма, которая осталась после сжатия: если файл уменьшился на 80%, то осталось 100% − 80% = <b>20%</b> исходного объёма.</p>
+        <p><b>Шаг 2.</b> Применим формулу архива <b>V_архива = V_исходный · доля</b>, где V_исходный = 300 Кбайт, доля = 20% = 0,2:</p>
+        <div class="formula">V_архива = 300 · 0,2 = 60 Кбайт</div>
+        <span class="ans">Ответ: 60 Кбайт.</span>
+      </div>
+      <div class="example"><b>Где применяется в жизни и проектах.</b> Архивация используется при отправке почты с вложениями, резервном копировании и передаче файлов по сети: сжатие уменьшает объём и ускоряет загрузку. ПО для сжатия (ZIP, RAR, 7-Zip) применяет эти же принципы, оценивая степень сжатия; системные администраторы рассчитывают экономию места и времени при хранении логов и отчётов.</div>
+      <p class="note">«Уменьшился на 80%» не означает «стал равен 80%» — это типичная ловушка. Правильно вычитать из 100%.</p>
+    </article>
+
+    <article class="slide">
+      <p class="kicker">Пример использования</p>
+      <h2 class="st">Пример 8 · Вес символа (ОГЭ)</h2>
+      <p class="lead">Прямая задача на информационный вес символа по мощности алфавита.</p>
+      <div class="card"><p class="ttl">Условие (ОГЭ)</p>
+        <p>Алфавит племени содержит 64 символа. Каждый символ несёт одинаковое количество информации. Каков информационный вес одного символа в битах?</p>
+      </div>
+      <div class="sol"><label>Решение</label>
+        <p><b>Шаг 1.</b> Применяем формулу связи веса символа и мощности алфавита <b>N = 2<sup>i</sup></b>, где N = 64. Подставляем N и подбираем степень двойки:</p>
+        <div class="formula">64 = 2^6  →  i = 6 бит</div>
+        <span class="ans">Ответ: 6 бит.</span>
+      </div>
+      <div class="example"><b>Где применяется в жизни и проектах.</b> Определение веса символа из мощности алфавита используется при разработке систем кодирования и сжатия, создании управляющих кодов и протоколов. Например, кодирование 64 символами (Base64) применяется для передачи двоичных данных по текстовым каналам: электронная почта и веб-приложения кодируют изображения и файлы именно таким образом.</div>
+      <p class="note">Запоминаем часто встречающиеся степени двойки: 2, 4, 8, 16, 32, 64, 128, 256 соответствуют 1, 2, 3, 4, 5, 6, 7, 8 битам.</p>
+    </article>
+
+    <article class="slide">
+      <p class="kicker">Домашнее задание</p>
+      <h2 class="st">Четыре задачи для самостоятельного решения</h2>
+      <div class="card"><p class="ttl">Задание 1 (ОГЭ)</p>
+        <p>В одной из кодировок Unicode каждый символ кодируется 16 битами. Чему равен информационный объём сообщения из 25 символов, выраженный в байтах?</p>
+      </div>
+      <div class="card"><p class="ttl">Задание 2 (ОГЭ)</p>
+        <p>Растровое изображение размером 1280×1024 пикселей сохранили в режиме 16 777 216 цветов (24 бита на пиксель). Определите информационный объём файла в Мбайтах.</p>
+      </div>
+      <div class="card"><p class="ttl">Задание 3 (ЕГЭ)</p>
+        <p>Автоматическое устройство перекодировало сообщение из 16-битной кодировки в 8-битную; объём уменьшился на 320 бит. Чему равна длина сообщения в символах?</p>
+      </div>
+      <div class="card"><p class="ttl">Задание 4 (ОГЭ)</p>
+        <p>Файл объёмом 600 Кбайт заархивировали; объём архива составил 10% от исходного. Чему равен объём архива в Кбайтах? Во сколько раз уменьшился файл?</p>
+      </div>
+      <p class="note">Рекомендуется оформлять решение по образцу разобранных задач: выписать условие, последовательно выполнить действия с указанием единиц измерения, сформулировать ответ.</p>
+    </article>
+
+    <article class="slide">
+      <p class="kicker">Завершение</p>
+      <h2 class="st">Итоги и тест для самопроверки</h2>
+      <p class="lead">На занятии изучены понятие информации и три подхода к её измерению, единицы измерения, информационные объекты, определение объёмов носителей и архивация. Разобрано восемь задач в формате ОГЭ и ЕГЭ. Для закрепления выполните тест для самопроверки.</p>
+      <div class="card">
+        <p class="ttl">Ключевые формулы и правила</p>
+        <ul class="clean">
+          <li><b>N = 2<sup>i</sup></b> — число вариантов N и количество информации i.</li>
+          <li><b>V = K · i</b> — объём текстового сообщения.</li>
+          <li><b>1 байт = 8 бит</b>; 1 Кбайт = 1024 байта; 1 Мбайт = 1024 Кбайта.</li>
+          <li><b>Объём графики</b> = пиксели × глубина цвета.</li>
+          <li><b>Время передачи</b> = объём (бит) ÷ скорость (бит/с).</li>
+          <li><b>Объём архива</b> = исходный объём × (доля после сжатия).</li>
+        </ul>
+      </div>
+      <div style="margin-top:1.2rem; text-align:center;">
+        <button id="openModal" class="btn-open">Пройти тест для самопроверки</button>
+      </div>
+    </article>
+
+  </div>
+
+  <div class="pbar"><div id="pfill"></div></div>
+  <div class="nav">
+    <button id="prev" disabled>← Назад</button>
+    <div class="dots" id="dots"></div>
+    <span class="counter" id="counter">1</span>
+    <button id="next" class="primary">Далее →</button>
+  </div>
+
+  <footer>
+    <b>ПУП.02 Информатика</b> · Тема 1.2: Подходы к измерению информации. Материал для самостоятельной подготовки; рекомендуемые источники приведены в тексте лекции. Сформировано 30.09.2026.
+  </footer>
+</main>
+
+<!-- ============ Modal ============ -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-head">
+      <h2 id="modalTitle">Тест для самопроверки</h2>
+      <button class="modal-close" id="modalClose" aria-label="Закрыть">×</button>
+    </div>
+    <div class="modal-body">
+      <p class="qz-intro">Задания разных типов: числовой ответ, выбор одного варианта, «верно/неверно», выбор нескольких вариантов. После выбора сразу отображается пояснение.</p>
+
+      <div class="qz">
+        <span class="ztype">Числовой ответ</span>
+        <p class="zq">Вопрос 1. Сообщение несёт 4 бита информации. Сколько равновероятных событий привело к его появлению? (число)</p>
+        <div class="znum">
+          <input type="text" id="qzNum1" placeholder="N = …" autocomplete="off">
+          <button class="zbtn" onclick="qzNumAnswer(1,16)">Проверить</button>
+        </div>
+        <div class="zexpl"><p class="head">Пояснение</p><p>N = 2<sup>i</sup> = 2<sup>4</sup> = 16 событий.</p></div>
+      </div>
+
+      <div class="qz">
+        <span class="ztype">Выбор одного варианта</span>
+        <p class="zq">Вопрос 2. Какую информацию несёт сообщение о выпадении орла при подбрасывании монеты?</p>
+        <button class="zopt" data-ok="false" onclick="qzSingle(this)"><span class="l">А.</span>2 бита</button>
+        <button class="zopt" data-ok="true" onclick="qzSingle(this)"><span class="l">Б.</span>1 бит</button>
+        <button class="zopt" data-ok="false" onclick="qzSingle(this)"><span class="l">В.</span>8 бит</button>
+        <button class="zopt" data-ok="false" onclick="qzSingle(this)"><span class="l">Г.</span>0 бит</button>
+        <div class="zexpl"><p class="head">Пояснение</p><p>Два равновероятных исхода: N = 2, значит i = 1 бит.</p></div>
+      </div>
+
+      <div class="qz">
+        <span class="ztype">Выбор одного варианта</span>
+        <p class="zq">Вопрос 3. Алфавит имеет мощность 32. Каков информационный вес одного символа?</p>
+        <button class="zopt" data-ok="false" onclick="qzSingle(this)"><span class="l">А.</span>4 бита</button>
+        <button class="zopt" data-ok="false" onclick="qzSingle(this)"><span class="l">Б.</span>6 бит</button>
+        <button class="zopt" data-ok="true" onclick="qzSingle(this)"><span class="l">В.</span>5 бит</button>
+        <button class="zopt" data-ok="false" onclick="qzSingle(this)"><span class="l">Г.</span>32 бита</button>
+        <div class="zexpl"><p class="head">Пояснение</p><p>32 = 2<sup>5</sup>, значит вес символа i = 5 бит.</p></div>
+      </div>
+
+      <div class="qz">
+        <span class="ztype">Верно или неверно</span>
+        <p class="zq">Вопрос 4. 1 Мбайт = 1000 Кбайт.</p>
+        <button class="zopt" data-ok="false" onclick="qzSingle(this)"><span class="l">А.</span>Верно</button>
+        <button class="zopt" data-ok="true" onclick="qzSingle(this)"><span class="l">Б.</span>Неверно</button>
+        <div class="zexpl"><p class="head">Пояснение</p><p>Утверждение неверно: 1 Мбайт = 1024 Кбайта, так как единицы кратны 2<sup>10</sup> = 1024.</p></div>
+      </div>
+
+      <div class="qz">
+        <span class="ztype">Числовой ответ</span>
+        <p class="zq">Вопрос 5. Сколько байт в 2048 битах? (число)</p>
+        <div class="znum">
+          <input type="text" id="qzNum2" placeholder="байт" autocomplete="off">
+          <button class="zbtn" onclick="qzNumAnswer(2,256)">Проверить</button>
+        </div>
+        <div class="zexpl"><p class="head">Пояснение</p><p>2048 ÷ 8 = 256 байт.</p></div>
+      </div>
+
+      <div class="qz">
+        <span class="ztype">Выбор нескольких вариантов</span>
+        <p class="zq">Вопрос 6. Какие единицы измерения кратны 1024 (а не 1000)?</p>
+        <button class="zopt" data-ok="true" onclick="qzMulti(this)"><span class="l">А.</span>Кбайт</button>
+        <button class="zopt" data-ok="true" onclick="qzMulti(this)"><span class="l">Б.</span>Мбайт</button>
+        <button class="zopt" data-ok="false" onclick="qzMulti(this)"><span class="l">В.</span>Мегабит (в сетях)</button>
+        <button class="zopt" data-ok="true" onclick="qzMulti(this)"><span class="l">Г.</span>Гбайт</button>
+        <div class="zexpl"><p class="head">Пояснение</p><p>Кбайт, Мбайт и Гбайт кратны 1024. Мегабит в сетях обычно десятичный (1 000 000 бит).</p></div>
+      </div>
+
+      <div class="qz">
+        <span class="ztype">Числовой ответ</span>
+        <p class="zq">Вопрос 7. Файл 8 Мбайт заархивировали так, что осталось 25% исходного объёма. Каков объём архива в Мбайтах? (число)</p>
+        <div class="znum">
+          <input type="text" id="qzNum3" placeholder="Мбайт" autocomplete="off">
+          <button class="zbtn" onclick="qzNumAnswer(3,2)">Проверить</button>
+        </div>
+        <div class="zexpl"><p class="head">Пояснение</p><p>8 × 0,25 = 2 Мбайта.</p></div>
+      </div>
+
+      <p class="zscore" id="qzScore"></p>
+    </div>
+  </div>
+</div>
+
+<script>
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.deck .slide'));
+  var cur = 0;
+  var prevBtn = document.getElementById('prev');
+  var nextBtn = document.getElementById('next');
+  var counter = document.getElementById('counter');
+  var dotsBox = document.getElementById('dots');
+
+  function render(){
+    slides.forEach(function(s, i){ s.classList.toggle('active', i === cur); });
+    prevBtn.disabled = (cur === 0);
+    nextBtn.disabled = (cur === slides.length - 1);
+    counter.textContent = (cur + 1) + ' / ' + slides.length;
+    document.getElementById('pfill').style.width = ((cur + 1) / slides.length * 100) + '%';
+    buildDots();
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+  function buildDots(){
+    dotsBox.innerHTML = '';
+    for (var i = 0; i < slides.length; i++){
+      var d = document.createElement('button');
+      d.className = 'dot' + (i === cur ? ' active' : '');
+      d.title = 'Слайд ' + (i+1);
+      (function(idx){ d.addEventListener('click', function(){ go(idx); }); })(i);
+      dotsBox.appendChild(d);
+    }
+  }
+  function go(idx){
+    if (idx < 0 || idx >= slides.length) return;
+    cur = idx; render();
+  }
+  prevBtn.addEventListener('click', function(){ go(cur - 1); });
+  nextBtn.addEventListener('click', function(){ go(cur + 1); });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowRight' || e.key === 'PageDown') go(cur + 1);
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp') go(cur - 1);
+  });
+
+  var overlay = document.getElementById('modalOverlay');
+  document.getElementById('openModal').addEventListener('click', function(){ overlay.classList.add('show'); });
+  document.getElementById('modalClose').addEventListener('click', function(){ overlay.classList.remove('show'); });
+  overlay.addEventListener('click', function(e){ if (e.target === overlay) overlay.classList.remove('show'); });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') overlay.classList.remove('show'); });
+
+  var qzTotal = 7, qzDone = 0, qzScore = 0;
+  function qzSingle(btn){
+    var qz = btn.closest('.qz');
+    if (qz.classList.contains('done')) return;
+    qz.classList.add('done');
+    var ok = btn.getAttribute('data-ok') === 'true';
+    var opts = qz.querySelectorAll('.zopt');
+    opts.forEach(function(o){ o.disabled = true; });
+    var expl = qz.querySelector('.zexpl');
+    if (ok){ qzScore++; expl.classList.add('ok'); expl.querySelector('.head').textContent = 'Верно. Ответ выбран правильно.'; }
+    else { expl.classList.add('bad'); expl.querySelector('.head').textContent = 'Неверно. Правильный ответ подсвечен.'; opts.forEach(function(o){ if(o.getAttribute('data-ok')==='true') o.classList.add('right'); }); }
+    expl.classList.add('show'); qzDone++; updateQzScore();
+  }
+  function qzNumAnswer(id, correct){
+    var input = document.getElementById('qzNum' + id);
+    var qz = input.closest('.qz');
+    if (qz.classList.contains('done')) return;
+    var val = parseFloat(input.value.replace(/\s/g,'').replace(',','.'));
+    if (isNaN(val)) return;
+    qz.classList.add('done');
+    var expl = qz.querySelector('.zexpl');
+    if (Math.abs(val - correct) < 0.01){ qzScore++; expl.classList.add('ok'); expl.querySelector('.head').textContent = 'Верно. Расчёт выполнен правильно.'; }
+    else { expl.classList.add('bad'); expl.querySelector('.head').textContent = 'Неверно. Ознакомьтесь с решением.'; }
+    expl.classList.add('show'); qzDone++; updateQzScore();
+  }
+  [1,2,3].forEach(function(id){ document.getElementById('qzNum'+id).addEventListener('keydown', function(e){ if(e.key==='Enter') qzNumAnswer(id, [16,256,2][id-1]); }); });
+  function qzMulti(btn){
+    var qz = btn.closest('.qz');
+    if (qz.classList.contains('done')) return;
+    var ok = btn.getAttribute('data-ok') === 'true';
+    btn.disabled = true; btn.classList.add(ok ? 'right' : 'wrong');
+    var expl = qz.querySelector('.zexpl');
+    if (!ok){ qz.classList.add('done'); expl.classList.add('bad'); expl.querySelector('.head').textContent = 'Ошибка. Выбранный вариант неверен.'; expl.classList.add('show'); qzDone++; updateQzScore(); return; }
+    var allOk = true;
+    qz.querySelectorAll('.zopt[data-ok="true"]').forEach(function(o){ if(!o.classList.contains('right')) allOk=false; });
+    if (allOk){ qz.classList.add('done'); expl.classList.add('ok'); expl.querySelector('.head').textContent = 'Верно. Все правильные варианты выбраны.'; expl.classList.add('show'); qzScore++; qzDone++; updateQzScore(); }
+  }
+  function updateQzScore(){
+    var el = document.getElementById('qzScore');
+    if (el) el.textContent = 'Результат самопроверки: ' + qzScore + ' из ' + qzTotal + '.';
+  }
+  render();
+</script>
+</body>
+</html>
